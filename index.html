@@ -1,0 +1,615 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>BharatVoice – Learn & Talk with AI</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <style>
+    :root {
+      --bg1:#ffecd2; --bg2:#fcb69f; --bg3:#fbc2eb; --bg4:#a6c1ee;
+      --card:#ffffff; --accent:#22c55e; --accent2:#0ea5e9;
+      --text-main:#111827; --text-muted:#6b7280;
+      --radius-xl:24px; --radius-lg:18px;
+    }
+    *{box-sizing:border-box;}
+    body{
+      margin:0;
+      font-family:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+      background:radial-gradient(circle at top,#fbc2eb 0,#fbc2eb 30%,#a6c1ee 70%,#fcb69f 100%);
+      min-height:100vh;display:flex;align-items:stretch;justify-content:center;
+      padding:10px;color:var(--text-main);
+    }
+    .shell{
+      background:linear-gradient(145deg,#ffffffee,#fff8f4ee);
+      border-radius:var(--radius-xl);
+      box-shadow:0 20px 60px rgba(15,23,42,0.3);
+      width:100%;max-width:1120px;display:flex;flex-direction:column;overflow:hidden;
+    }
+    header{
+      padding:12px 18px;display:flex;align-items:center;justify-content:space-between;
+      border-bottom:1px solid #f3e8ff;background:linear-gradient(90deg,#ffffffcc,#fff7ffcc);
+    }
+    .brand{display:flex;align-items:center;gap:12px;}
+    .brand-logo{
+      width:48px;height:48px;border-radius:16px;
+      background:conic-gradient(from 0deg,#22c55e,#0ea5e9,#a855f7,#fb7185,#22c55e);
+      display:flex;align-items:center;justify-content:center;
+      color:#fff;font-weight:800;font-size:22px;
+      box-shadow:0 12px 30px rgba(15,23,42,0.4);
+    }
+    .brand-text h1{margin:0;font-size:18px;display:flex;align-items:center;gap:6px;}
+    .tag{font-size:10px;padding:2px 8px;border-radius:999px;background:#22c55e;color:#ecfdf5;font-weight:600;}
+    .brand-text p{margin:2px 0 0;font-size:11px;color:var(--text-muted);}
+    .user-pill{
+      display:flex;align-items:center;gap:8px;
+      padding:6px 10px;border-radius:999px;
+      background:#ecfdf5;border:1px solid #bbf7d0;font-size:12px;
+    }
+    .user-avatar{
+      width:26px;height:26px;border-radius:999px;background:#22c55e;color:#fff;
+      display:flex;align-items:center;justify-content:center;font-weight:700;
+    }
+    .btn-ghost{border:0;background:transparent;font-size:12px;cursor:pointer;color:var(--accent2);font-weight:600;}
+
+    .main{display:grid;grid-template-columns:280px minmax(0,1fr);min-height:480px;}
+    @media(max-width:900px){.main{grid-template-columns:1fr;}}
+
+    .left{
+      padding:14px;border-right:1px solid #f3e8ff;
+      background:linear-gradient(180deg,#fdf2ff,#e0f2fe);
+    }
+    .section-title{font-size:13px;font-weight:700;margin-bottom:8px;color:#4b5563;}
+    .xp-bar{background:#e5e7eb;border-radius:999px;height:10px;overflow:hidden;position:relative;margin-top:6px;}
+    .xp-fill{position:absolute;left:0;top:0;bottom:0;width:0;background:linear-gradient(90deg,#22c55e,#0ea5e9);border-radius:999px;}
+    .xp-label{font-size:11px;color:var(--text-muted);margin-top:3px;}
+
+    .lesson-list{margin-top:10px;display:flex;flex-direction:column;gap:8px;}
+    .lesson-card{
+      border-radius:var(--radius-lg);background:var(--card);padding:10px 12px;
+      display:flex;align-items:center;gap:10px;cursor:pointer;border:2px solid transparent;
+      box-shadow:0 8px 18px rgba(15,23,42,0.08);
+    }
+    .lesson-card.active{border-color:var(--accent);box-shadow:0 10px 22px rgba(34,197,94,0.4);}
+    .lesson-icon{
+      width:32px;height:32px;border-radius:12px;display:flex;align-items:center;justify-content:center;
+      background:#dcfce7;font-size:18px;
+    }
+    .lesson-info h3{margin:0;font-size:14px;}
+    .lesson-info p{margin:2px 0 0;font-size:11px;color:var(--text-muted);}
+    .chip{font-size:10px;padding:2px 6px;border-radius:999px;background:#fef3c7;}
+    .left-footer{margin-top:14px;font-size:11px;color:var(--text-muted);}
+
+    .right{
+      padding:14px 16px;
+      background:radial-gradient(circle at top right,#fbc2eb44,transparent),
+                 radial-gradient(circle at bottom left,#a7f3d044,transparent);
+      position:relative;
+    }
+    .panel{display:none;}
+    .panel.active{display:block;}
+
+    .card{
+      background:var(--card);border-radius:var(--radius-lg);padding:14px 16px;
+      box-shadow:0 12px 30px rgba(15,23,42,0.15);margin-bottom:14px;
+    }
+    .card-header{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:6px;}
+    .card-header-title{display:flex;align-items:center;gap:8px;}
+    .card-header-title span.icon{
+      width:26px;height:26px;border-radius:10px;display:flex;align-items:center;justify-content:center;
+      background:#e0f2fe;font-size:16px;
+    }
+    .card-header-title h2{margin:0;font-size:16px;}
+    .card-sub{font-size:12px;color:var(--text-muted);}
+
+    .btn{
+      border-radius:999px;padding:10px 14px;border:0;font-size:13px;font-weight:600;
+      cursor:pointer;display:inline-flex;align-items:center;gap:6px;
+    }
+    .btn-primary{background:linear-gradient(90deg,#22c55e,#0ea5e9);color:#ecfdf5;}
+    .btn-soft{background:#e5f3ff;color:#075985;}
+    .btn-danger{background:linear-gradient(90deg,#ef4444,#f97316);color:#fff;}
+    .btn:disabled{opacity:0.4;cursor:not-allowed;}
+
+    textarea,input,select{
+      width:100%;font-family:inherit;font-size:13px;border-radius:12px;border:1px solid #e5e7eb;
+      padding:8px 10px;background:#f9fafb;
+    }
+    textarea{resize:vertical;min-height:70px;}
+    .row{display:flex;flex-wrap:wrap;gap:8px;align-items:center;}
+    .row-space{display:flex;justify-content:space-between;gap:8px;font-size:12px;color:var(--text-muted);margin-top:6px;}
+    .pill{padding:4px 8px;border-radius:999px;background:#f3f4f6;font-size:11px;}
+
+    .logs{max-height:120px;overflow-y:auto;}
+    .log-line{font-size:11px;color:var(--text-muted);border-left:2px solid #22c55e;padding-left:6px;margin-bottom:4px;}
+
+    .chat-box{max-height:260px;overflow-y:auto;border-radius:16px;padding:8px;background:#f9fafb;border:1px solid #e5e7eb;}
+    .chat-msg{max-width:75%;padding:7px 10px;border-radius:14px;font-size:13px;margin-bottom:6px;}
+    .chat-msg.me{margin-left:auto;background:#d1fae5;}
+    .chat-msg.ai{margin-right:auto;background:#e0f2fe;}
+
+    footer{
+      padding:8px 14px 10px;font-size:11px;color:var(--text-muted);
+      display:flex;justify-content:space-between;gap:8px;border-top:1px solid #f3e8ff;background:#fffdfb;
+    }
+
+    .bottom-nav{display:none;}
+    @media(max-width:900px){
+      .bottom-nav{
+        display:flex;position:sticky;bottom:0;background:#fff;border-top:1px solid #e5e7eb;
+        padding:4px 6px;justify-content:space-around;z-index:30;
+      }
+      .bottom-nav button{
+        border:0;background:transparent;display:flex;flex-direction:column;align-items:center;gap:2px;
+        font-size:11px;padding:4px 6px;border-radius:999px;
+      }
+      .bottom-nav button.active{background:#dcfce7;color:#166534;}
+    }
+  </style>
+</head>
+<body>
+  <div class="shell">
+    <header>
+      <div class="brand">
+        <div class="brand-logo">BV</div>
+        <div class="brand-text">
+          <h1>BharatVoice <span class="tag">Learn & Talk</span></h1>
+          <p>Duolingo-style practice with live AI voice & translation</p>
+        </div>
+      </div>
+      <div class="user-pill">
+        <div class="user-avatar" id="userAvatar">U</div>
+        <span id="userNameText">Guest</span>
+        <button class="btn-ghost" id="loginBtn">Login</button>
+      </div>
+    </header>
+
+    <div class="main">
+      <!-- LEFT COLUMN -->
+      <aside class="left">
+        <div>
+          <div class="section-title">Today’s progress</div>
+          <div class="xp-bar"><div class="xp-fill" id="xpFill"></div></div>
+          <div class="xp-label" id="xpLabel">0 / 5 mini-sessions</div>
+        </div>
+
+        <div class="section-title" style="margin-top:10px;">Choose a mode</div>
+        <div class="lesson-list">
+          <div class="lesson-card active" data-panel="voice">
+            <div class="lesson-icon">🎧</div>
+            <div class="lesson-info">
+              <h3>Voice Tutor</h3>
+              <p>Talk to AI, hear replies</p>
+              <span class="chip">Voice ↔ Text ↔ Voice</span>
+            </div>
+          </div>
+          <div class="lesson-card" data-panel="translate">
+            <div class="lesson-icon" style="background:#fee2e2;">🌐</div>
+            <div class="lesson-info">
+              <h3>Sentence Translator</h3>
+              <p>English ↔ Indian languages</p>
+              <span class="chip">Text ↔ Text + Speech</span>
+            </div>
+          </div>
+          <div class="lesson-card" data-panel="chat">
+            <div class="lesson-icon" style="background:#ddd6fe;">🤖</div>
+            <div class="lesson-info">
+              <h3>Chat Playground</h3>
+              <p>Ask anything in text</p>
+              <span class="chip">AI chat + voice</span>
+            </div>
+          </div>
+          <div class="lesson-card" data-panel="guide">
+            <div class="lesson-icon" style="background:#fef9c3;">📘</div>
+            <div class="lesson-info">
+              <h3>Guide & Help</h3>
+              <p>How everything works</p>
+              <span class="chip">For judges & users</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="left-footer">
+          Tip: For best mic, open this in Google Chrome on laptop or Android.
+        </div>
+      </aside>
+
+      <!-- RIGHT PANEL AREA -->
+      <section class="right">
+        <!-- VOICE -->
+        <div class="panel active" id="panel-voice">
+          <div class="card">
+            <div class="card-header">
+              <div class="card-header-title">
+                <span class="icon">🎧</span>
+                <div>
+                  <h2>Voice Tutor</h2>
+                  <div class="card-sub">Speak a sentence, let AI answer, and listen to the reply.</div>
+                </div>
+              </div>
+              <span class="pill" id="voiceStatus">Mic: ready</span>
+            </div>
+
+            <div class="row" style="margin-bottom:8px;">
+              <button class="btn btn-primary" id="voiceListenBtn">🎤 Start speaking</button>
+              <button class="btn btn-soft" id="voiceStopBtn">⏹ Stop</button>
+              <button class="btn btn-soft" id="voiceClearBtn">🧹 Clear</button>
+            </div>
+
+            <div class="row-space">
+              <span>Your sentence (voice → text)</span>
+            </div>
+            <textarea id="voiceInput" placeholder="Press Start and speak, or type here…"></textarea>
+
+            <div class="row-space">
+              <span>AI reply</span>
+              <span><input type="checkbox" id="voiceAutoSpeak" checked /> <span style="font-size:11px;">Auto-speak</span></span>
+            </div>
+            <textarea id="voiceReply" placeholder="AI will respond here…"></textarea>
+
+            <div class="row" style="margin-top:8px;">
+              <button class="btn btn-primary" id="voiceAskBtn">🤖 Ask AI</button>
+              <button class="btn btn-soft" id="voiceSpeakUserBtn">🔊 Speak my sentence</button>
+              <button class="btn btn-soft" id="voiceSpeakReplyBtn">🔊 Speak AI reply</button>
+            </div>
+          </div>
+
+          <div class="card">
+            <div class="card-header-title">
+              <span class="icon" style="background:#bbf7d0;">📋</span>
+              <h2>Session Log</h2>
+            </div>
+            <div class="logs" id="voiceLogs"></div>
+          </div>
+        </div>
+
+        <!-- TRANSLATE -->
+        <div class="panel" id="panel-translate">
+          <div class="card">
+            <div class="card-header">
+              <div class="card-header-title">
+                <span class="icon" style="background:#fee2e2;">🌐</span>
+                <div>
+                  <h2>Sentence Translator</h2>
+                  <div class="card-sub">Translate between English, Hindi, Tamil, Kannada, Telugu.</div>
+                </div>
+              </div>
+            </div>
+
+            <div class="row">
+              <div style="flex:1 1 120px;">
+                <div class="row-space"><span>From</span></div>
+                <select id="trFrom">
+                  <option value="en">English</option>
+                  <option value="hi">Hindi</option>
+                  <option value="ta">Tamil</option>
+                  <option value="kn">Kannada</option>
+                  <option value="te">Telugu</option>
+                </select>
+              </div>
+              <div style="flex:1 1 120px;">
+                <div class="row-space"><span>To</span></div>
+                <select id="trTo">
+                  <option value="hi">Hindi</option>
+                  <option value="en">English</option>
+                  <option value="ta">Tamil</option>
+                  <option value="kn">Kannada</option>
+                  <option value="te">Telugu</option>
+                </select>
+              </div>
+            </div>
+
+            <div class="row-space" style="margin-top:8px;">
+              <span>Original text</span>
+              <span style="font-size:11px;">You can also dictate 🎤</span>
+            </div>
+            <textarea id="trInput" placeholder="Type or use mic to add a sentence…"></textarea>
+
+            <div class="row" style="margin-top:6px;">
+              <button class="btn btn-soft" id="trMicBtn">🎤 Speak original</button>
+              <button class="btn btn-primary" id="trRunBtn">🌐 Translate</button>
+            </div>
+
+            <div class="row-space" style="margin-top:8px;">
+              <span>Translated text</span>
+            </div>
+            <textarea id="trOutput" placeholder="Translation appears here…"></textarea>
+
+            <div class="row" style="margin-top:6px;">
+              <button class="btn btn-soft" id="trSpeakFromBtn">🔊 Speak original</button>
+              <button class="btn btn-soft" id="trSpeakToBtn">🔊 Speak translation</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- CHAT -->
+        <div class="panel" id="panel-chat">
+          <div class="card">
+            <div class="card-header">
+              <div class="card-header-title">
+                <span class="icon" style="background:#ddd6fe;">🤖</span>
+                <div>
+                  <h2>Chat Playground</h2>
+                  <div class="card-sub">Type or talk, get friendly replies from AI.</div>
+                </div>
+              </div>
+            </div>
+
+            <div class="chat-box" id="chatBox"></div>
+
+            <div style="margin-top:8px;">
+              <textarea id="chatInput" rows="2" placeholder="Type your message or tap mic…"></textarea>
+            </div>
+
+            <div class="row" style="margin-top:6px;">
+              <button class="btn btn-primary" id="chatSendBtn">📨 Send</button>
+              <button class="btn btn-soft" id="chatMicBtn">🎤 Speak</button>
+              <button class="btn btn-soft" id="chatSpeakBtn">🔊 Speak last reply</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- GUIDE -->
+        <div class="panel" id="panel-guide">
+          <div class="card">
+            <div class="card-header-title">
+              <span class="icon" style="background:#fef9c3;">📘</span>
+              <div><h2>Guide & How It Works</h2></div>
+            </div>
+            <ul style="font-size:13px;line-height:1.6;margin-top:6px;">
+              <li>Pick a mode from the left (or bottom on mobile).</li>
+              <li><strong>Voice Tutor</strong>: Voice → Text → AI → Voice.</li>
+              <li><strong>Translator</strong>: Text → Text + speech in both languages.</li>
+              <li><strong>Chat Playground</strong>: Normal chat + option to listen to last reply.</li>
+              <li>AI replies come from OpenRouter if your key is set, otherwise from safe demo logic.</li>
+            </ul>
+          </div>
+        </div>
+      </section>
+    </div>
+
+    <nav class="bottom-nav">
+      <button data-panel="voice" class="active">🎧<span>Voice</span></button>
+      <button data-panel="translate">🌐<span>Translate</span></button>
+      <button data-panel="chat">🤖<span>Chat</span></button>
+      <button data-panel="guide">📘<span>Guide</span></button>
+    </nav>
+
+    <footer>
+      <div>Made for Buildathon • BharatVoice AI</div>
+      <div id="globalStatus">Mic & voice ready (browser)</div>
+    </footer>
+  </div>
+
+  <script>
+    /************* CONFIG: PUT YOUR KEY HERE *************/
+    // Replace ONLY this string with your real OpenRouter key, like:
+    // "sk-or-v1-xxxxxxxxxxxxxxxxxxxxxxxx"
+    const OPENROUTER_KEY = "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";
+    const USE_OPENROUTER = OPENROUTER_KEY.startsWith("sk-or-");
+    const VOICE_LANG = "en-IN";
+
+    /************* BASIC STATE *************/
+    const state = { xp:0 };
+
+    const panels = document.querySelectorAll(".panel");
+    const cards = document.querySelectorAll(".lesson-card");
+    const bottomBtns = document.querySelectorAll(".bottom-nav button");
+
+    function showPanel(p){
+      panels.forEach(x=>x.classList.toggle("active",x.id==="panel-"+p));
+      cards.forEach(c=>c.classList.toggle("active",c.dataset.panel===p));
+      bottomBtns.forEach(b=>b.classList.toggle("active",b.dataset.panel===p));
+    }
+    cards.forEach(c=>c.onclick=()=>showPanel(c.dataset.panel));
+    bottomBtns.forEach(b=>b.onclick=()=>showPanel(b.dataset.panel));
+
+    const userNameText=document.getElementById("userNameText");
+    const userAvatar=document.getElementById("userAvatar");
+    document.getElementById("loginBtn").onclick=()=>{
+      const name=prompt("Enter your name:","Guest");
+      if(!name)return;
+      userNameText.textContent=name;
+      userAvatar.textContent=name.trim()[0].toUpperCase();
+    };
+
+    const xpFill=document.getElementById("xpFill");
+    const xpLabel=document.getElementById("xpLabel");
+    function addXP(){
+      state.xp=Math.min(state.xp+1,5);
+      xpFill.style.width=(state.xp/5*100)+"%";
+      xpLabel.textContent=state.xp+" / 5 mini-sessions";
+    }
+
+    /************* MIC + TTS *************/
+    const SR=window.SpeechRecognition||window.webkitSpeechRecognition||null;
+    let recognition=null, dictTarget=null;
+    const voiceStatus=document.getElementById("voiceStatus");
+    const globalStatus=document.getElementById("globalStatus");
+
+    if(SR){
+      recognition=new SR();
+      recognition.continuous=true;
+      recognition.interimResults=false;
+      recognition.onresult=e=>{
+        const text=e.results[e.results.length-1][0].transcript;
+        if(dictTarget && "value" in dictTarget) dictTarget.value=text;
+      };
+      recognition.onend=()=>{voiceStatus.textContent="Mic: stopped";dictTarget=null;};
+      recognition.onerror=e=>{voiceStatus.textContent="Mic error: "+e.error;};
+    }else{
+      document.querySelectorAll("#voiceListenBtn,#voiceStopBtn,#trMicBtn,#chatMicBtn")
+        .forEach(b=>b.disabled=true);
+      voiceStatus.textContent="Mic not supported – use Chrome.";
+      globalStatus.textContent="TTS OK, mic not supported in this browser.";
+    }
+
+    function startDict(el){
+      if(!recognition) return alert("Use Chrome for mic.");
+      dictTarget=el; recognition.lang=VOICE_LANG; recognition.start();
+      voiceStatus.textContent="Listening…";
+    }
+    function stopDict(){ if(recognition) recognition.stop(); }
+
+    function speak(text,lang){
+      if(!("speechSynthesis" in window)) return alert("This browser cannot speak.");
+      if(!text.trim())return;
+      const u=new SpeechSynthesisUtterance(text);
+      u.lang=lang||VOICE_LANG; u.rate=1; u.pitch=1;
+      speechSynthesis.cancel(); speechSynthesis.speak(u);
+    }
+
+    /************* AI via OpenRouter (or offline demo) *************/
+    async function getAIReply(message){
+      const prompt = message.trim();
+      if(!prompt) return "Please say or type something first 😊";
+
+      if(!USE_OPENROUTER){
+        // simple offline fallback
+        if(prompt.toLowerCase().includes("hello"))
+          return "Hi! I am BharatVoice, your language buddy. Ask me anything or practise a sentence.";
+        if(prompt.toLowerCase().includes("translate"))
+          return "For translations, open the Translator mode and choose your languages.";
+        return "Demo reply: I understood “"+prompt+"”. When you add a real OpenRouter key I will use a powerful model.";
+      }
+
+      try{
+        const res = await fetch("https://openrouter.ai/api/v1/chat/completions",{
+          method:"POST",
+          headers:{
+            "Authorization":"Bearer "+OPENROUTER_KEY,
+            "Content-Type":"application/json",
+            "HTTP-Referer": window.location.href,
+            "X-Title": "BharatVoice AI"
+          },
+          body:JSON.stringify({
+            model:"google/gemma-7b-it",
+            messages:[
+              {role:"system",content:"You are BharatVoice, a friendly Duolingo-style tutor. Reply in 2–4 short sentences, very clear and helpful."},
+              {role:"user",content:prompt}
+            ]
+          })
+        });
+        const data = await res.json();
+        if(!data.choices || !data.choices.length) throw new Error("No choices");
+        return data.choices[0].message.content || "Empty AI reply.";
+      }catch(err){
+        console.error(err);
+        return "Online AI call failed, so I’m answering in demo mode. I understood: “"+prompt+"”.";
+      }
+    }
+
+    /************* VOICE TUTOR *************/
+    const vIn=document.getElementById("voiceInput");
+    const vOut=document.getElementById("voiceReply");
+    const vListen=document.getElementById("voiceListenBtn");
+    const vStop=document.getElementById("voiceStopBtn");
+    const vClear=document.getElementById("voiceClearBtn");
+    const vAsk=document.getElementById("voiceAskBtn");
+    const vSpeakUser=document.getElementById("voiceSpeakUserBtn");
+    const vSpeakReply=document.getElementById("voiceSpeakReplyBtn");
+    const vAuto=document.getElementById("voiceAutoSpeak");
+    const vLogs=document.getElementById("voiceLogs");
+
+    function log(msg){
+      const d=document.createElement("div");
+      d.className="log-line"; d.textContent=new Date().toLocaleTimeString()+" – "+msg;
+      vLogs.prepend(d);
+    }
+
+    vListen.onclick=()=>startDict(vIn);
+    vStop.onclick=()=>stopDict();
+    vClear.onclick=()=>{vIn.value="";vOut.value="";};
+
+    vAsk.onclick=async()=>{
+      const txt=vIn.value.trim();
+      if(!txt){vOut.value="Say or type something first.";return;}
+      vOut.value="Thinking…"; log("Sending to AI");
+      const reply=await getAIReply(txt);
+      vOut.value=reply; log("AI replied");
+      addXP(); if(vAuto.checked) speak(reply);
+    };
+    vSpeakUser.onclick=()=>speak(vIn.value);
+    vSpeakReply.onclick=()=>speak(vOut.value);
+
+    /************* TRANSLATOR *************/
+    const trFrom=document.getElementById("trFrom");
+    const trTo=document.getElementById("trTo");
+    const trInput=document.getElementById("trInput");
+    const trOutput=document.getElementById("trOutput");
+    const trMicBtn=document.getElementById("trMicBtn");
+    const trRunBtn=document.getElementById("trRunBtn");
+    const trSpeakFromBtn=document.getElementById("trSpeakFromBtn");
+    const trSpeakToBtn=document.getElementById("trSpeakToBtn");
+
+    if(!recognition) trMicBtn.disabled=true;
+    trMicBtn.onclick=()=>startDict(trInput);
+
+    function langToVoice(code){
+      switch(code){
+        case "hi":return "hi-IN";
+        case "ta":return "ta-IN";
+        case "kn":return "kn-IN";
+        case "te":return "te-IN";
+        default:return "en-IN";
+      }
+    }
+
+    async function translateDemo(text,from,to){
+      const q=text.trim(); if(!q) return "";
+      try{
+        const url="https://api.mymemory.translated.net/get?q="+encodeURIComponent(q)+"&langpair="+from+"|"+to;
+        const res=await fetch(url); const data=await res.json();
+        if(data.responseData && data.responseData.translatedText) return data.responseData.translatedText;
+        return q;
+      }catch(e){return q+" (translation failed)";}
+    }
+
+    trRunBtn.onclick=async()=>{
+      const txt=trInput.value;
+      if(!txt.trim()){trOutput.value="Type something first.";return;}
+      trOutput.value="Translating…";
+      const out=await translateDemo(txt,trFrom.value,trTo.value);
+      trOutput.value=out; addXP();
+    };
+    trSpeakFromBtn.onclick=()=>speak(trInput.value,langToVoice(trFrom.value));
+    trSpeakToBtn.onclick=()=>speak(trOutput.value,langToVoice(trTo.value));
+
+    /************* CHAT *************/
+    const chatBox=document.getElementById("chatBox");
+    const chatInput=document.getElementById("chatInput");
+    const chatSendBtn=document.getElementById("chatSendBtn");
+    const chatMicBtn=document.getElementById("chatMicBtn");
+    const chatSpeakBtn=document.getElementById("chatSpeakBtn");
+    if(!recognition) chatMicBtn.disabled=true;
+
+    function addChat(text,who){
+      const d=document.createElement("div");
+      d.className="chat-msg "+(who==="me"?"me":"ai");
+      d.textContent=text;
+      chatBox.appendChild(d);
+      chatBox.scrollTop=chatBox.scrollHeight;
+    }
+
+    chatSendBtn.onclick=async()=>{
+      const txt=chatInput.value.trim();
+      if(!txt)return;
+      addChat(txt,"me"); chatInput.value="";
+      addChat("Thinking…","ai");
+      const reply=await getAIReply(txt);
+      const aiMsgs=chatBox.querySelectorAll(".chat-msg.ai");
+      aiMsgs[aiMsgs.length-1].textContent=reply;
+      addXP();
+    };
+
+    chatInput.addEventListener("keydown",e=>{
+      if(e.key==="Enter" && !e.shiftKey){e.preventDefault();chatSendBtn.click();}
+    });
+    chatMicBtn.onclick=()=>startDict(chatInput);
+    chatSpeakBtn.onclick=()=>{
+      const aiMsgs=chatBox.querySelectorAll(".chat-msg.ai");
+      if(!aiMsgs.length)return;
+      speak(aiMsgs[aiMsgs.length-1].textContent);
+    };
+  </script>
+</body>
+</html>
