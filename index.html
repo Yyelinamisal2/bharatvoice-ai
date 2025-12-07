@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <title>BharatVoice – Learn & Talk with AI</title>
+  <title>BharatVoice – Learn & Talk with AI (OpenAI)</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <style>
     :root {
@@ -144,6 +144,9 @@
       }
       .bottom-nav button.active{background:#dcfce7;color:#166534;}
     }
+    .warn-key{
+      display:inline-block;padding:6px 8px;background:#fff3cd;border:1px solid #ffe8a1;border-radius:8px;font-size:12px;color:#7a5800;margin-left:8px;
+    }
   </style>
 </head>
 <body>
@@ -209,7 +212,7 @@
         </div>
 
         <div class="left-footer">
-          Tip: For best mic, open this in Google Chrome on laptop or Android.
+          Tip: For best mic, open this in Google Chrome on laptop or Android. <span class="warn-key" id="keyWarn" style="display:none;">Key exposed in page — use server proxy for production</span>
         </div>
       </aside>
 
@@ -358,10 +361,20 @@
             <ul style="font-size:13px;line-height:1.6;margin-top:6px;">
               <li>Pick a mode from the left (or bottom on mobile).</li>
               <li><strong>Voice Tutor</strong>: Voice → Text → AI → Voice.</li>
-              <li><strong>Translator</strong>: Text → Text + speech in both languages.</li>
+              <li><strong>Translator</strong>: Text → Text + speech in both languages (uses a public demo translation API).</li>
               <li><strong>Chat Playground</strong>: Normal chat + option to listen to last reply.</li>
-              <li>AI replies come from OpenRouter if your key is set, otherwise from safe demo logic.</li>
+              <li>AI replies come from <strong>OpenAI</strong> when you set your OpenAI key below. For production, keep keys on a server and never embed them in client code.</li>
             </ul>
+            <div style="margin-top:10px;font-size:13px;">
+              <label style="font-weight:700;">OpenAI API Key (for quick local testing)</label>
+              <div style="margin-top:6px;display:flex;gap:8px;">
+                <input id="openaiKeyInput" placeholder="sk-..." />
+                <button class="btn btn-primary" id="saveKeyBtn">Save key</button>
+              </div>
+              <div style="margin-top:6px;font-size:12px;color:var(--text-muted);">
+                <strong>Warning:</strong> Adding a key here stores it in-memory only (and exposes it to anyone who can inspect this page). For real apps, use a server to call OpenAI.
+              </div>
+            </div>
           </div>
         </div>
       </section>
@@ -381,14 +394,15 @@
   </div>
 
   <script>
-    /************* CONFIG: PUT YOUR KEY HERE *************/
-    // Replace ONLY this string with your real OpenRouter key, like:
-    // "sk-or-v1-xxxxxxxxxxxxxxxxxxxxxxxx"
-    const OPENROUTER_KEY = "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";
-    const USE_OPENROUTER = OPENROUTER_KEY.startsWith("sk-or-");
+    /********************** CONFIG: OPENAI KEY (client-only demo) **********************/
+    // WARNING:
+    // - For testing you can paste your OpenAI key below via the UI.
+    // - DO NOT put real production keys into client-side code. Use a server/proxy.
+    let OPENAI_KEY = ""; // set by UI
+    let USE_OPENAI = false;
     const VOICE_LANG = "en-IN";
 
-    /************* BASIC STATE *************/
+    /********************** BASIC STATE **********************/
     const state = { xp:0 };
 
     const panels = document.querySelectorAll(".panel");
@@ -405,9 +419,9 @@
 
     const userNameText=document.getElementById("userNameText");
     const userAvatar=document.getElementById("userAvatar");
-    document.getElementById("loginBtn").onclick=()=>{
+    document.getElementById("loginBtn").onclick=()=> {
       const name=prompt("Enter your name:","Guest");
-      if(!name)return;
+      if(!name) return;
       userNameText.textContent=name;
       userAvatar.textContent=name.trim()[0].toUpperCase();
     };
@@ -420,196 +434,240 @@
       xpLabel.textContent=state.xp+" / 5 mini-sessions";
     }
 
-    /************* MIC + TTS *************/
-    const SR=window.SpeechRecognition||window.webkitSpeechRecognition||null;
-    let recognition=null, dictTarget=null;
-    const voiceStatus=document.getElementById("voiceStatus");
-    const globalStatus=document.getElementById("globalStatus");
+    /********************** MIC + TTS **********************/
+    const SR = window.SpeechRecognition || window.webkitSpeechRecognition || null;
+    let recognition = null, dictTarget = null;
+    const voiceStatus = document.getElementById("voiceStatus");
+    const globalStatus = document.getElementById("globalStatus");
 
     if(SR){
-      recognition=new SR();
-      recognition.continuous=true;
-      recognition.interimResults=false;
-      recognition.onresult=e=>{
-        const text=e.results[e.results.length-1][0].transcript;
-        if(dictTarget && "value" in dictTarget) dictTarget.value=text;
+      recognition = new SR();
+      recognition.continuous = true;
+      recognition.interimResults = false;
+      recognition.onresult = e => {
+        const text = e.results[e.results.length-1][0].transcript;
+        if(dictTarget && "value" in dictTarget) dictTarget.value = text;
       };
-      recognition.onend=()=>{voiceStatus.textContent="Mic: stopped";dictTarget=null;};
-      recognition.onerror=e=>{voiceStatus.textContent="Mic error: "+e.error;};
+      recognition.onend = () => { voiceStatus.textContent = "Mic: stopped"; dictTarget = null; };
+      recognition.onerror = e => { voiceStatus.textContent = "Mic error: "+(e.error || e.message || e.type); };
     }else{
       document.querySelectorAll("#voiceListenBtn,#voiceStopBtn,#trMicBtn,#chatMicBtn")
         .forEach(b=>b.disabled=true);
-      voiceStatus.textContent="Mic not supported – use Chrome.";
-      globalStatus.textContent="TTS OK, mic not supported in this browser.";
+      voiceStatus.textContent = "Mic not supported – use Chrome.";
+      globalStatus.textContent = "TTS OK, mic not supported in this browser.";
     }
 
     function startDict(el){
       if(!recognition) return alert("Use Chrome for mic.");
-      dictTarget=el; recognition.lang=VOICE_LANG; recognition.start();
-      voiceStatus.textContent="Listening…";
+      dictTarget = el; recognition.lang = VOICE_LANG;
+      try { recognition.start(); voiceStatus.textContent="Listening…"; } catch(e) { voiceStatus.textContent="Mic error (start)."; }
     }
     function stopDict(){ if(recognition) recognition.stop(); }
 
     function speak(text,lang){
       if(!("speechSynthesis" in window)) return alert("This browser cannot speak.");
-      if(!text.trim())return;
-      const u=new SpeechSynthesisUtterance(text);
-      u.lang=lang||VOICE_LANG; u.rate=1; u.pitch=1;
+      if(!text || !text.trim()) return;
+      const u = new SpeechSynthesisUtterance(text);
+      u.lang = lang || VOICE_LANG; u.rate = 1; u.pitch = 1;
       speechSynthesis.cancel(); speechSynthesis.speak(u);
     }
 
-    /************* AI via OpenRouter (or offline demo) *************/
-    async function getAIReply(message){
+    /********************** OPENAI: Chat completion helper **********************/
+    async function getAIReply(message) {
       const prompt = message.trim();
       if(!prompt) return "Please say or type something first 😊";
 
-      if(!USE_OPENROUTER){
-        // simple offline fallback
+      if(!USE_OPENAI || !OPENAI_KEY){
+        // Local fallback when no key set
         if(prompt.toLowerCase().includes("hello"))
-          return "Hi! I am BharatVoice, your language buddy. Ask me anything or practise a sentence.";
+          return "Hi! I am BharatVoice, your language buddy. Add your OpenAI key in the Guide to use the real model.";
         if(prompt.toLowerCase().includes("translate"))
-          return "For translations, open the Translator mode and choose your languages.";
-        return "Demo reply: I understood “"+prompt+"”. When you add a real OpenRouter key I will use a powerful model.";
+          return "Use the Translator mode for quick translations.";
+        return "Demo reply: I understood '"+prompt+"'. Add an OpenAI key in the Guide to use real AI responses.";
       }
 
-      try{
-        const res = await fetch("https://openrouter.ai/api/v1/chat/completions",{
-          method:"POST",
-          headers:{
-            "Authorization":"Bearer "+OPENROUTER_KEY,
-            "Content-Type":"application/json",
-            "HTTP-Referer": window.location.href,
-            "X-Title": "BharatVoice AI"
+      try {
+        // Using the Chat Completions endpoint
+        const res = await fetch("https://api.openai.com/v1/chat/completions", {
+          method: "POST",
+          headers: {
+            "Authorization": "Bearer " + OPENAI_KEY,
+            "Content-Type": "application/json"
           },
-          body:JSON.stringify({
-            model:"google/gemma-7b-it",
-            messages:[
-              {role:"system",content:"You are BharatVoice, a friendly Duolingo-style tutor. Reply in 2–4 short sentences, very clear and helpful."},
-              {role:"user",content:prompt}
-            ]
+          body: JSON.stringify({
+            model: "gpt-4o-mini", // change to whichever model you have access to
+            messages: [
+              { role: "system", content: "You are BharatVoice, a friendly Duolingo-style tutor. Reply in 2–4 short sentences, very clear and helpful." },
+              { role: "user", content: prompt }
+            ],
+            max_tokens: 200,
+            temperature: 0.3
           })
         });
+
+        if(!res.ok){
+          const txt = await res.text();
+          console.error("OpenAI error", res.status, txt);
+          return "OpenAI API error: " + res.status + " — check key & quota. See console for details.";
+        }
+
         const data = await res.json();
-        if(!data.choices || !data.choices.length) throw new Error("No choices");
-        return data.choices[0].message.content || "Empty AI reply.";
-      }catch(err){
-        console.error(err);
-        return "Online AI call failed, so I’m answering in demo mode. I understood: “"+prompt+"”.";
+        // Chat completions returns choices[].message.content
+        const reply = data?.choices?.[0]?.message?.content;
+        if(!reply) return "No reply from OpenAI (empty).";
+        return reply;
+      } catch (err) {
+        console.error("OpenAI fetch error", err);
+        return "Failed to call OpenAI: " + (err.message || err);
       }
     }
 
-    /************* VOICE TUTOR *************/
-    const vIn=document.getElementById("voiceInput");
-    const vOut=document.getElementById("voiceReply");
-    const vListen=document.getElementById("voiceListenBtn");
-    const vStop=document.getElementById("voiceStopBtn");
-    const vClear=document.getElementById("voiceClearBtn");
-    const vAsk=document.getElementById("voiceAskBtn");
-    const vSpeakUser=document.getElementById("voiceSpeakUserBtn");
-    const vSpeakReply=document.getElementById("voiceSpeakReplyBtn");
-    const vAuto=document.getElementById("voiceAutoSpeak");
-    const vLogs=document.getElementById("voiceLogs");
+    /********************** VOICE TUTOR **********************/
+    const vIn = document.getElementById("voiceInput");
+    const vOut = document.getElementById("voiceReply");
+    const vListen = document.getElementById("voiceListenBtn");
+    const vStop = document.getElementById("voiceStopBtn");
+    const vClear = document.getElementById("voiceClearBtn");
+    const vAsk = document.getElementById("voiceAskBtn");
+    const vSpeakUser = document.getElementById("voiceSpeakUserBtn");
+    const vSpeakReply = document.getElementById("voiceSpeakReplyBtn");
+    const vAuto = document.getElementById("voiceAutoSpeak");
+    const vLogs = document.getElementById("voiceLogs");
 
     function log(msg){
-      const d=document.createElement("div");
-      d.className="log-line"; d.textContent=new Date().toLocaleTimeString()+" – "+msg;
+      const d = document.createElement("div");
+      d.className = "log-line";
+      d.textContent = new Date().toLocaleTimeString() + " – " + msg;
       vLogs.prepend(d);
     }
 
-    vListen.onclick=()=>startDict(vIn);
-    vStop.onclick=()=>stopDict();
-    vClear.onclick=()=>{vIn.value="";vOut.value="";};
+    vListen.onclick = () => startDict(vIn);
+    vStop.onclick = () => stopDict();
+    vClear.onclick = () => { vIn.value = ""; vOut.value = ""; };
 
-    vAsk.onclick=async()=>{
-      const txt=vIn.value.trim();
-      if(!txt){vOut.value="Say or type something first.";return;}
-      vOut.value="Thinking…"; log("Sending to AI");
-      const reply=await getAIReply(txt);
-      vOut.value=reply; log("AI replied");
-      addXP(); if(vAuto.checked) speak(reply);
+    vAsk.onclick = async () => {
+      const txt = vIn.value.trim();
+      if(!txt){ vOut.value = "Say or type something first."; return; }
+      vOut.value = "Thinking…"; log("Sending to OpenAI");
+      const reply = await getAIReply(txt);
+      vOut.value = reply; log("AI replied");
+      addXP();
+      if(vAuto.checked) speak(reply);
     };
-    vSpeakUser.onclick=()=>speak(vIn.value);
-    vSpeakReply.onclick=()=>speak(vOut.value);
+    vSpeakUser.onclick = () => speak(vIn.value);
+    vSpeakReply.onclick = () => speak(vOut.value);
 
-    /************* TRANSLATOR *************/
-    const trFrom=document.getElementById("trFrom");
-    const trTo=document.getElementById("trTo");
-    const trInput=document.getElementById("trInput");
-    const trOutput=document.getElementById("trOutput");
-    const trMicBtn=document.getElementById("trMicBtn");
-    const trRunBtn=document.getElementById("trRunBtn");
-    const trSpeakFromBtn=document.getElementById("trSpeakFromBtn");
-    const trSpeakToBtn=document.getElementById("trSpeakToBtn");
+    /********************** TRANSLATOR (demo using MyMemory) **********************/
+    const trFrom = document.getElementById("trFrom");
+    const trTo = document.getElementById("trTo");
+    const trInput = document.getElementById("trInput");
+    const trOutput = document.getElementById("trOutput");
+    const trMicBtn = document.getElementById("trMicBtn");
+    const trRunBtn = document.getElementById("trRunBtn");
+    const trSpeakFromBtn = document.getElementById("trSpeakFromBtn");
+    const trSpeakToBtn = document.getElementById("trSpeakToBtn");
 
-    if(!recognition) trMicBtn.disabled=true;
-    trMicBtn.onclick=()=>startDict(trInput);
+    if(!recognition) trMicBtn.disabled = true;
+    trMicBtn.onclick = () => startDict(trInput);
 
     function langToVoice(code){
       switch(code){
-        case "hi":return "hi-IN";
-        case "ta":return "ta-IN";
-        case "kn":return "kn-IN";
-        case "te":return "te-IN";
-        default:return "en-IN";
+        case "hi": return "hi-IN";
+        case "ta": return "ta-IN";
+        case "kn": return "kn-IN";
+        case "te": return "te-IN";
+        default: return "en-IN";
       }
     }
 
     async function translateDemo(text,from,to){
-      const q=text.trim(); if(!q) return "";
+      const q = text.trim(); if(!q) return "";
       try{
-        const url="https://api.mymemory.translated.net/get?q="+encodeURIComponent(q)+"&langpair="+from+"|"+to;
-        const res=await fetch(url); const data=await res.json();
+        const url = "https://api.mymemory.translated.net/get?q=" + encodeURIComponent(q) + "&langpair=" + from + "|" + to;
+        const res = await fetch(url); const data = await res.json();
         if(data.responseData && data.responseData.translatedText) return data.responseData.translatedText;
         return q;
-      }catch(e){return q+" (translation failed)";}
+      }catch(e){ return q + " (translation failed)"; }
     }
 
-    trRunBtn.onclick=async()=>{
-      const txt=trInput.value;
-      if(!txt.trim()){trOutput.value="Type something first.";return;}
-      trOutput.value="Translating…";
-      const out=await translateDemo(txt,trFrom.value,trTo.value);
-      trOutput.value=out; addXP();
+    trRunBtn.onclick = async () => {
+      const txt = trInput.value;
+      if(!txt.trim()){ trOutput.value = "Type something first."; return; }
+      trOutput.value = "Translating…";
+      const out = await translateDemo(txt, trFrom.value, trTo.value);
+      trOutput.value = out; addXP();
     };
-    trSpeakFromBtn.onclick=()=>speak(trInput.value,langToVoice(trFrom.value));
-    trSpeakToBtn.onclick=()=>speak(trOutput.value,langToVoice(trTo.value));
+    trSpeakFromBtn.onclick = () => speak(trInput.value, langToVoice(trFrom.value));
+    trSpeakToBtn.onclick = () => speak(trOutput.value, langToVoice(trTo.value));
 
-    /************* CHAT *************/
-    const chatBox=document.getElementById("chatBox");
-    const chatInput=document.getElementById("chatInput");
-    const chatSendBtn=document.getElementById("chatSendBtn");
-    const chatMicBtn=document.getElementById("chatMicBtn");
-    const chatSpeakBtn=document.getElementById("chatSpeakBtn");
-    if(!recognition) chatMicBtn.disabled=true;
+    /********************** CHAT **********************/
+    const chatBox = document.getElementById("chatBox");
+    const chatInput = document.getElementById("chatInput");
+    const chatSendBtn = document.getElementById("chatSendBtn");
+    const chatMicBtn = document.getElementById("chatMicBtn");
+    const chatSpeakBtn = document.getElementById("chatSpeakBtn");
+    if(!recognition) chatMicBtn.disabled = true;
 
     function addChat(text,who){
-      const d=document.createElement("div");
-      d.className="chat-msg "+(who==="me"?"me":"ai");
-      d.textContent=text;
+      const d = document.createElement("div");
+      d.className = "chat-msg " + (who==="me" ? "me" : "ai");
+      d.textContent = text;
       chatBox.appendChild(d);
-      chatBox.scrollTop=chatBox.scrollHeight;
+      chatBox.scrollTop = chatBox.scrollHeight;
     }
 
-    chatSendBtn.onclick=async()=>{
-      const txt=chatInput.value.trim();
-      if(!txt)return;
-      addChat(txt,"me"); chatInput.value="";
+    chatSendBtn.onclick = async () => {
+      const txt = chatInput.value.trim();
+      if(!txt) return;
+      addChat(txt,"me"); chatInput.value = "";
       addChat("Thinking…","ai");
-      const reply=await getAIReply(txt);
-      const aiMsgs=chatBox.querySelectorAll(".chat-msg.ai");
-      aiMsgs[aiMsgs.length-1].textContent=reply;
+      const reply = await getAIReply(txt);
+      // replace last AI "Thinking…" bubble
+      const aiMsgs = chatBox.querySelectorAll(".chat-msg.ai");
+      aiMsgs[aiMsgs.length-1].textContent = reply;
       addXP();
     };
 
-    chatInput.addEventListener("keydown",e=>{
-      if(e.key==="Enter" && !e.shiftKey){e.preventDefault();chatSendBtn.click();}
+    chatInput.addEventListener("keydown", e => {
+      if(e.key === "Enter" && !e.shiftKey){ e.preventDefault(); chatSendBtn.click(); }
     });
-    chatMicBtn.onclick=()=>startDict(chatInput);
-    chatSpeakBtn.onclick=()=>{
-      const aiMsgs=chatBox.querySelectorAll(".chat-msg.ai");
-      if(!aiMsgs.length)return;
+    chatMicBtn.onclick = () => startDict(chatInput);
+    chatSpeakBtn.onclick = () => {
+      const aiMsgs = chatBox.querySelectorAll(".chat-msg.ai");
+      if(!aiMsgs.length) return;
       speak(aiMsgs[aiMsgs.length-1].textContent);
     };
+
+    /********************** KEY UI: save & use key (client-side) **********************/
+    const openaiKeyInput = document.getElementById("openaiKeyInput");
+    const saveKeyBtn = document.getElementById("saveKeyBtn");
+    const keyWarn = document.getElementById("keyWarn");
+
+    saveKeyBtn.onclick = () => {
+      const k = openaiKeyInput.value.trim();
+      if(!k){ alert("Paste your OpenAI key (sk-...) into the box first."); return; }
+      OPENAI_KEY = k;
+      USE_OPENAI = OPENAI_KEY.startsWith("sk-");
+      keyWarn.style.display = "inline-block";
+      alert("OpenAI key saved in-memory for this page. For production, use a server proxy.");
+    };
+
+    /********************** misc UI glue **********************/
+    // panels and bottom nav already wired earlier — ensure bottom nav works on mobile
+    document.querySelectorAll('.bottom-nav button').forEach(b => {
+      b.onclick = () => showPanel(b.dataset.panel);
+    });
+
+    // initialize XP bar
+    xpFill.style.width = "0%";
+    xpLabel.textContent = state.xp + " / 5 mini-sessions";
+
+    // initial welcome message in chat
+    addChat("Welcome to BharatVoice (demo). Set an OpenAI key in Guide to enable real AI replies.","ai");
+
+// API KEY FOR THE WEBSITE: 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
+
   </script>
 </body>
 </html>
+
